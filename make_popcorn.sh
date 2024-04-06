@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 ## Version 0.1.1
 ##
@@ -118,11 +118,11 @@ if [ "$rd_dep" = "yes" ]; then
     echo "Installing local dependencies"
     yarn config set yarn-offline-mirror ./node_modules/
     yarn install --ignore-engines
-    yarn build
+    yarn build --platforms osx64
     echo "Successfully setup for Popcorn Time"
 fi
 
-if yarn build; then
+if yarn build --platforms osx64; then
     echo "Popcorn Time built successfully!"
     if [[ `uname -s` != *"NT"* ]]; then # if not windows
         ./Create-Desktop-Entry

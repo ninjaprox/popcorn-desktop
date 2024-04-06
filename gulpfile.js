@@ -3,7 +3,7 @@
 /********
  * setup *
  ********/
-const defaultNwVersion = '0.82.0',
+const defaultNwVersion = '0.86.0',
   availablePlatforms = ['linux32', 'linux64', 'win32', 'win64', 'osx64'],
   releasesDir = 'build',
   nwFlavor = 'sdk';
@@ -11,11 +11,21 @@ const defaultNwVersion = '0.82.0',
 /***************
  * dependencies *
  ***************/
+// import nwBuilder from "nw-builder";
+let nwbuild;
+import("nw-builder")
+  .then((object) => {
+    nwbuild = obj;
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+
 const gulp = require('gulp'),
   glp = require('gulp-load-plugins')(),
   del = require('del'),
   gulpRename = require('gulp-rename'),
-  nwBuilder = require('nw-builder'),
+  // nwBuilder = require('nw-builder'),
   yargs = require('yargs'),
   nib = require('nib'),
   git = require('git-describe'),
@@ -26,7 +36,9 @@ const gulp = require('gulp'),
   spawn = require('child_process').spawn,
   pkJson = require('./package.json');
 
-const { detectCurrentPlatform } = require('nw-builder/dist/index.cjs');
+// const { detectCurrentPlatform } = require('nw-builder/dist/index.cjs');
+
+const detectCurrentPlatform = (process) => "osx64"
 
 // see: https://shows.cf/version.json
 const nwVersion = yargs.argv.nwVersion || defaultNwVersion;
@@ -178,17 +190,17 @@ gulp.task('cleanForDist', (done) => {
 });
 
 // nw-builder configuration
-const nw = new nwBuilder({
-  files: [],
-  buildDir: releasesDir,
-  zip: false,
-  macIcns: './src/app/images/butter.icns',
-  version: nwVersion,
-  flavor: nwFlavor,
-  manifestUrl: 'https://popcorn-time.serv00.net/version.json',
-  downloadUrl: 'https://popcorn-time.serv00.net/nw/',
-  platforms: parsePlatforms()
-}).on('log', console.log);
+// const nw = new nwBuilder({
+//   files: [],
+//   buildDir: releasesDir,
+//   zip: false,
+//   macIcns: './src/app/images/butter.icns',
+//   version: nwVersion,
+//   flavor: nwFlavor,
+//   manifestUrl: 'https://popcorn-time.serv00.net/version.json',
+//   downloadUrl: 'https://popcorn-time.serv00.net/nw/',
+//   platforms: parsePlatforms()
+// }).on('log', console.log);
 
 /*************
  * gulp tasks *
@@ -393,8 +405,29 @@ gulp.task('mac-pkg', () => {
 gulp.task('nwjs', () => {
   return parseReqDeps()
     .then((requiredDeps) => {
-      // required files
-      nw.options.files = [
+      return import("nw-builder")
+        .then((object) => {
+          return [requiredDeps, object.default]
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      })
+    .then(([requiredDeps, nwbuild]) => {
+      // const nw = new nwBuilder({
+      //   files: [],
+      //   buildDir: releasesDir,
+      //   zip: false,
+      //   macIcns: './src/app/images/butter.icns',
+      //   version: nwVersion,
+      //   flavor: nwFlavor,
+      //   manifestUrl: 'https://popcorn-time.serv00.net/version.json',
+      //   downloadUrl: 'https://popcorn-time.serv00.net/nw/',
+      //   platforms: parsePlatforms()
+      // }).on('log', console.log);
+      console.log({nwbuild})
+
+      const files = [
         './src/**',
         '!./src/app/styl/**',
         './package.json',
@@ -402,11 +435,9 @@ gulp.task('nwjs', () => {
         './CHANGELOG.md',
         './LICENSE.txt',
         './git.json'
-      ];
-      // add node_modules
-      nw.options.files = nw.options.files.concat(requiredDeps);
-      // remove junk files
-      nw.options.files = nw.options.files.concat([
+      ]
+        .concat(requiredDeps)
+        .concat([
         '!./node_modules/**/*.bin',
         '!./node_modules/**/*.c',
         '!./node_modules/**/*.h',
@@ -418,9 +449,50 @@ gulp.task('nwjs', () => {
         '!./**/demo*/**',
         '!./*/bin/**',
         '!./**/.*/**'
-      ]);
+        ]);
 
-      return nw.build();
+      return nwbuild({
+        mode: 'build',
+        srcDir: files.join(' '),
+        outDir: releasesDir,
+        zip: false,
+        macIcns: './src/app/images/butter.icns',
+        version: nwVersion,
+        flavor: nwFlavor,
+        manifestUrl: 'https://popcorn-time.serv00.net/version.json',
+        downloadUrl: 'https://popcorn-time.serv00.net/nw/',
+        platform: "osx",
+        arch: "arm64"
+      })
+
+      // // required files
+      // nw.options.files = [
+      //   './src/**',
+      //   '!./src/app/styl/**',
+      //   './package.json',
+      //   './README.md',
+      //   './CHANGELOG.md',
+      //   './LICENSE.txt',
+      //   './git.json'
+      // ];
+      // // add node_modules
+      // nw.options.files = nw.options.files.concat(requiredDeps);
+      // // remove junk files
+      // nw.options.files = nw.options.files.concat([
+      //   '!./node_modules/**/*.bin',
+      //   '!./node_modules/**/*.c',
+      //   '!./node_modules/**/*.h',
+      //   '!./node_modules/**/Makefile',
+      //   '!./node_modules/**/*.h',
+      //   '!./**/test*/**',
+      //   '!./**/doc*/**',
+      //   '!./**/example*/**',
+      //   '!./**/demo*/**',
+      //   '!./*/bin/**',
+      //   '!./**/.*/**'
+      // ]);
+
+      // return nw.build();
     })
     .catch(function(error) {
       console.error(error);

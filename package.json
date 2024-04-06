@@ -117,7 +117,7 @@
     "jshint": "^2.13.6",
     "jshint-stylish": "^2.2.1",
     "nib": "^1.2.0",
-    "nw-builder": "^3.7.4",
+    "nw-builder": "^4.7.1",
     "stylus": "^0.62",
     "yargs": "^17"
   }
